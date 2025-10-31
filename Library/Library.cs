@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,7 +46,47 @@ namespace SharpKnP321.Library
                 ArtItem = "Пектораль",
                 Publisher = "Студія 'Лазер'"
             });
-        }   
+            Funds.Add(new Booklet
+            {
+                Title = "New Opening!",
+                Subject = "Sweet Restaurant",
+                Author = "PopShop"
+            });
+        }
+        public void ShowColorPrintable()
+        {
+            // Пошук за атрибутами - метаданими, що супроводжують методи
+            foreach (Literature literature in Funds)
+            {
+                foreach(var method in literature.GetType().GetMethods())
+                {
+                    var attr = method.GetCustomAttribute<ColorPrintAttribute>();
+                    if(attr != null)
+                    {
+                        // вилучення додаткових даних з атрибуту (attr.Copies)
+                        for (int i = 0; i < attr.Copies; i++)
+                        {
+                            method.Invoke(literature, ["RGB"]);
+                        }                        
+                    }
+                }
+            }
+        }
+
+        public void ShowPrintable()
+        {
+            // Duck Typing - find objects of any type with Print() method
+            foreach (Literature literature in Funds)
+            {
+                MethodInfo? printMethod = literature.GetType().GetMethod("Print");
+                if(printMethod != null)
+                {
+                    // Method invocation
+                    //                  object     args - values for params
+                    printMethod.Invoke(literature, null);
+                }
+            }
+        }
 
         public void PrintCatalog()
         {
@@ -104,4 +145,9 @@ namespace SharpKnP321.Library
                        об'єктів                             \_______________________/
                        [ ( 20 ), ... ]              утворення нового об'єкту і заміна посилання на нього
                        
+ 
+ A = B                 копія значення В до А        утворення другого посилання на В
+
+ B.x = 10              змінюється тільки B.x        змінюється поле "х" єдиного об'єкту,
+                                                    тобто як В.х, так і А.х
  */

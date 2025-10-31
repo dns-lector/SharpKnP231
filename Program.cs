@@ -1,16 +1,107 @@
 ﻿
+using SharpKnP321.Exceptions;
 using SharpKnP321.Library;
+using SharpKnP321.Vectors;
+using System.Reflection;
 
-Library library = new();
-library.PrintCatalog();
+// ShowReflection();
+// new VectorDemo().Run();
+try  // рекомендація - оточувати точку входу блоком try-catch
+{
+    Console.OutputEncoding = System.Text.Encoding.Unicode;
+    new ExceptionsDemo().Run();
+}
+catch (Exception ex)
+{
+    // Логічних дій з винятком на даному рівні передбачити важко -
+    // здійснюється логування (запис даних) про аварійну зупинку програми
+    // У режимі розробника це ще може бути Error-Page
+    Console.WriteLine("Не оброблений у прогамі виняток: " + ex.ToString());
+}
 
-Console.WriteLine("\n--------Periodic-----------");
-library.PrintPeriodic();
+void ShowReflection()
+{
+    /* Рефлексія (в ООП) - інструментарій мови/платформи, який
+     * дозволяє одержувати відомості про склад типу даних
+     */
+    Type bookType = typeof(Book);
 
-Console.WriteLine("\n--------NonPeriodic-----------");
-library.PrintNonPeriodic();
+    FieldInfo[] fields = bookType.GetFields();
+    if (fields.Length > 0)
+    {
+        Console.WriteLine("Type 'Book' has fields:");
+        foreach (var field in fields)
+        {
+            Console.WriteLine(field.Name);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Type 'Book' has no fields");
+    }
 
-Console.WriteLine("-------------------");
+
+    Console.WriteLine("Type 'Book' has props:");
+    foreach (var prop in bookType.GetProperties())
+    {
+        Console.WriteLine("{0}: {1}", prop.Name, prop.PropertyType.Name);
+        //Console.WriteLine($"{prop.Name}: {prop.PropertyType.Name}");
+    }
+
+    Console.WriteLine("Type 'Book' has methods:");
+    foreach(var method in bookType.GetMethods())
+    {
+        Console.WriteLine(method.Name);
+    }
+
+    Console.WriteLine("----------------------- Рефлексія за об'єктом --------------");
+
+    Literature j = new Journal()
+    {
+        Title = "ArgC & ArgV",
+        Number = "2(113), 2000",
+        Publisher = "https://journals.ua/technology/argc-argv/"
+    };
+    Type jType = j.GetType();
+    Console.WriteLine(jType.Name);   // Journal --- змінна типізується з об'єктом (а не за оголошенням)
+    // як дізнатись чи є у змінній властивість Number та, якщо є, дістатись його значення
+    PropertyInfo? propN = jType.GetProperty("Number");
+    if (propN != null)
+    {
+        // prop - відомості про тип даних, а не про об'єкт
+        var number = propN.GetValue(j);   // -> j.Number
+        Console.WriteLine($"Object has 'Number' property with value '{number}'");
+    }
+    else
+    {
+        Console.WriteLine("Object has no 'Number' property");
+    }
+    // "Качина типізація": якщо щось ходить як качка та видає звуки качки, то це і є качка
+    // Програмний прийом за якого визначається не сам тип, а наявність у ньому
+    // певних складових (частіше за все - методів)
+    // Замість перевірки умовного інтерфейсу IPrintable перевіряється наявність 
+    // метода Print()
+    Library library = new();
+    Console.WriteLine("--------- printable ------------");
+    library.ShowPrintable();
+    Console.WriteLine("--------- color printable ------------");
+    library.ShowColorPrintable();
+}
+
+void ShowLibrary()
+{
+    Library library = new();
+    library.PrintCatalog();
+
+    Console.WriteLine("\n--------Periodic-----------");
+    library.PrintPeriodic();
+
+    Console.WriteLine("\n--------NonPeriodic-----------");
+    library.PrintNonPeriodic();
+
+    Console.WriteLine("-------------------");
+}
+
 
 
 void Intro()
