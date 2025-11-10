@@ -1,4 +1,5 @@
 ﻿
+using SharpKnP321.Collect;
 using SharpKnP321.Events;
 using SharpKnP321.Exceptions;
 using SharpKnP321.Extensions;
@@ -15,7 +16,8 @@ try  // рекомендація - оточувати точку входу бл
     // new ExceptionsDemo().Run();
     // new FilesDemo().Run();
     // new ExtensionsDemo().Run();
-    new EventsDemo().Run();
+    // new EventsDemo().Run();
+    new CollectionsDemo().Run();
 }
 catch (Exception ex)
 {
