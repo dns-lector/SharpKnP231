@@ -13,10 +13,10 @@ namespace SharpKnP321.Data
         public void Run()
         {            
             DataAccessor dataAccessor = new();
-            // dataAccessor.Install();
-            // dataAccessor.Seed();
+            dataAccessor.Install();
+            dataAccessor.Seed();
 
-            List<Product> products = dataAccessor.GetProducts();
+            // List<Product> products = dataAccessor.GetProducts();
 
             // Вивести товари: назва -- ціна
             // - за зростанням ціни
@@ -27,10 +27,10 @@ namespace SharpKnP321.Data
             //  - 3 найдешевші товари
             //  - 3 випадкові товари (з кожним запуском різні)
 
-            foreach(var p in products.OrderBy(p => p.Price))
-            {
-                Console.WriteLine("{0} -- {1:F2}", p.Name, p.Price);
-            }
+            // foreach(var p in products.OrderBy(p => p.Price))
+            // {
+            //     Console.WriteLine("{0} -- {1:F2}", p.Name, p.Price);
+            // }
 
         }
         public void Run1()

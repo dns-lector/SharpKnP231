@@ -48,6 +48,44 @@ namespace SharpKnP321.Data
 
         public void Install()
         {
+            InstallProducts();
+            InstallDepartments();
+            InstallManagers();
+        }
+        private void InstallManagers()
+        {
+            String sql = "CREATE TABLE Managers(" +
+                "Id           UNIQUEIDENTIFIER PRIMARY KEY," +
+                "DepartmentId UNIQUEIDENTIFIER NOT NULL," +
+                "Name         NVARCHAR(64)     NOT NULL," +
+                "WorksFrom    DATETIME2        NOT NULL  DEFAULT CURRENT_TIMESTAMP)";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();   // без зворотнього результату
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
+        private void InstallDepartments()
+        {
+            String sql = "CREATE TABLE Departments(" +
+                "Id    UNIQUEIDENTIFIER PRIMARY KEY," +
+                "Name  NVARCHAR(64)     NOT NULL)";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();   // без зворотнього результату
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
+        private void InstallProducts()
+        {
             String sql = "CREATE TABLE Products(" +
                 "Id    UNIQUEIDENTIFIER PRIMARY KEY," +
                 "Name  NVARCHAR(64)     NOT NULL," +
@@ -63,7 +101,73 @@ namespace SharpKnP321.Data
             }
         }
 
+
         public void Seed()
+        {
+            SeedProducts();
+            SeedDepartments();
+            SeedManagers();
+        }
+        public void SeedManagers()
+        {
+            String sql = "INSERT INTO Managers VALUES" +
+                "('303AB470-798A-423B-9701-D94DD8A5B65A', 'C7727779-9EE3-4127-988E-F7E93A780204', N'Havrylova, Mykola', '2001-01-01')," +
+                "('F533D6BE-3C59-4B0E-9747-075840B93F18', 'C7727779-9EE3-4127-988E-F7E93A780204', N'Bodnarov, Svyatoslav', '2002-01-01')," +
+                "('5A5AE21A-4A1A-4D54-87C8-4AFF8000F7F8', 'C7727779-9EE3-4127-988E-F7E93A780204', N'Stepanenko, Hanna', '2003-01-01')," +
+                "('6CBBFCE2-43B6-4ACB-BA25-E93E15A478F0', 'C7727779-9EE3-4127-988E-F7E93A780204', N'Lyubchenko, Anatoliy', '2004-01-01')," +
+                "('A95B1703-B4B8-4962-83E9-A5B19F0A68C1', 'C7727779-9EE3-4127-988E-F7E93A780204', N'Havrylenko, Olena', '2005-01-01')," +
+                "('BD8B9C14-F11C-497C-B3BE-3AA88BF107B8', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Pavlenko, Hryhoriy', '2006-01-01')," +
+                "('1D581863-4E37-4EE9-BE72-03A612F83C82', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Savenko, Mikola', '2007-01-01')," +
+                "('86A9FC19-4F47-4BD8-B07F-CEBB6E51D8C7', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Pavlenko, Yana', '2008-01-01')," +
+                "('36726ECC-120C-491B-AD53-2AC3C0FFD752', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Chernyshov, Kateryna', '2009-01-01')," +
+                "('4B388C74-87F8-4F54-85B3-41E13035F0B1', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Ivanenko, Liudmyla', '2010-01-01')," +
+                "('93FE7CA7-A98D-4A0A-89C2-F2C78B1B6C5B', '451DD3B1-2287-4881-B66A-F5B3849B677C', N'Pavlenko, Iryna', '2011-01-01')," +
+                "('4B537970-D83A-4F56-AF04-335FEBC472FA', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Ivanenko, Dmytro', '2012-01-01')," +
+                "('4036121A-918E-43C6-8DD3-9DC9CADA8246', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Stepanenko, Mariya', '2013-01-01')," +
+                "('92904E45-1EF8-4E84-94C9-6DB06B2897E4', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Maksimov, Oleh', '2014-01-01')," +
+                "('794E6929-198D-4E6A-BF3E-C03B9DC82C8F', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Kovalenko, Oksanna', '2015-01-01')," +
+                "('54F6094F-3995-45A7-8DB7-A0FEF3FC9B3C', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Koval, Andriy', '2016-01-01')," +
+                "('DDF6691A-1EF1-4B38-B9A9-1374D11E1201', '8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Kovalenko, Ihor', '2017-01-01')," +
+                "('C2ED99C7-7B8B-42A3-8B79-0D685B107D19', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Havrylov, Mikola', '2018-01-01')," +
+                "('E2FF1A07-20A5-463D-A885-5EFF83E97873', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Stepanenko, Kostyantyn', '2019-01-01')," +
+                "('3536B5C8-65CA-49D1-9871-3A5EBBF67287', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Bodnarova, Hryhoriy', '2020-01-01')," +
+                "('376BC68A-74AC-477C-8392-8EC22CD8322B', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Chernyshova, Iuliya', '2019-01-01')," +
+                "('24CCDE5A-6334-461E-B9C7-A3E1D60B38F7', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Lyubchenko, Anatoliy', '2018-01-01')," +
+                "('2E9B856A-B14A-4257-B68D-4F43D1EA6A4C', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Chernyshov, Taras', '2017-01-01')," +
+                "('ABA637A2-F523-4985-9BD0-B3B2C31F0164', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Havrylov, Oleksandr', '2016-01-01')," +
+                "('E2F3E4AD-C43B-43C9-81B0-8BE13457A70C', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Lyubchenko, Aleh', '2015-01-01')," +
+                "('1560BD42-A722-4535-A151-BD3BD868C10D', 'B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'Pavlenko, Volodymyr', '2014-01-01')," +
+                "('E76C8F99-D4E5-4203-B4EA-AA37C806D8E0', 'B471180C-B4C0-4DF3-9290-D7DE881C94C7', N'Babych, Liudmyla', '2013-01-01')," +
+                "('23A6B3F0-9782-4710-87EC-1B210CB2C019', 'B471180C-B4C0-4DF3-9290-D7DE881C94C7', N'Bodnar, Anastasiya', '2012-01-01')";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
+        public void SeedDepartments()
+        {
+            String sql = "INSERT INTO Departments VALUES" +
+                "('C7727779-9EE3-4127-988E-F7E93A780204', N'Відділ маркетингу')," +
+                "('451DD3B1-2287-4881-B66A-F5B3849B677C', N'Відділ реклами')," +
+                "('8C51535C-26E3-4B8A-9F7C-7D669C4672AE', N'Відділ продажів')," +
+                "('B4C174CC-8C18-46DF-B8B4-F9E6F51EDCEA', N'ІТ відділ')," +
+                "('B471180C-B4C0-4DF3-9290-D7DE881C94C7', N'Служба безпеки')";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
+        public void SeedProducts()
         {
             String sql = "INSERT INTO Products VALUES" +
                 "('1C87B849-12F8-43A8-802F-89578FF1E6DC', N'Samsung Galaxy S24 Ultra', 20000.00)," +
@@ -75,6 +179,13 @@ namespace SharpKnP321.Data
                 "('B53CC6C7-CE42-4409-9A5B-BB359AF0AE34', N'ASUS Rog Phone 3', 18000.00)," +
                 "('71238977-8557-46C1-A169-525A48A2D671', N'OnePlus 8 Pro', 7000.00)," +
                 "('76B32D09-AFAF-4069-B0B1-6E6FDC96FADB', N'Xiaomi Redmi Note 8 Pro', 13000.00)," +
+                "('F835776E-D45F-41DA-AD6F-60BA9F7835AF', N'Apple iPhone 12', 15000.00)," +
+                "('106DCBF7-3E1C-46A0-BBD5-260CE332039E', N'OUKITEL WP5', 11000.00)," +
+                "('012DD183-2E42-49EF-BB02-4CC0F5A60F59', N'Samsung Galaxy S10', 16000.00)," +
+                "('3D01E555-6B5D-4EDF-B00D-2270F51EFBDC', N'Apple iPhone 11', 12500.00)," +
+                "('ED94CE4B-183D-416D-BD0F-CF876603EEA1', N'Samsung Galaxy A51', 11100.00)," +
+                "('725AE0FC-9D91-47D4-8F10-DA09E26D5F62', N'Nokia 5.1 16GB Android One', 16700.00)," +
+                "('84F206BB-B3EC-4333-8EA2-9874B3F801A8', N'ZTE Blade A3 (2020) NFC', 12100.00)," +
                 "('968CE4DF-21D2-4E55-81C7-0311F19F3E47', N'HUAWEI P40 Pro', 14000.00)";
             using SqlCommand cmd = new(sql, connection);
             try
@@ -88,3 +199,5 @@ namespace SharpKnP321.Data
         }
     }
 }
+
+
