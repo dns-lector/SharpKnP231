@@ -10,5 +10,10 @@ namespace SharpKnP321.Data.Dto
     {
         public Guid Id { get; set; }
         public String Name { get; set; } = null!;
+
+        public override string ToString()
+        {
+            return $"{Id.ToString()[..3]}... {Name}";
+        }
     }
 }

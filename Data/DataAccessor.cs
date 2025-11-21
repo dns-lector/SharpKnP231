@@ -1,7 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
 using SharpKnP321.Data.Dto;
+using SharpKnP321.Data.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +16,8 @@ namespace SharpKnP321.Data
 
         public DataAccessor()
         {
-            String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\samoylenko_d\Source\Repos\SharpKnP321\Database1.mdf;Integrated Security=True";
+            // String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\samoylenko_d\Source\Repos\SharpKnP321\Database1.mdf;Integrated Security=True";
+            String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Lector\source\repos\SharpKnP321\Database1.mdf;Integrated Security=True";
             this.connection = new(connectionString);
             try
             {
@@ -23,6 +26,56 @@ namespace SharpKnP321.Data
             catch (SqlException ex)
             {
                 Console.WriteLine("Connection failed: " + ex.Message);
+            }
+        }
+
+        public List<SaleModel> MonthlySalesByManagersOrm(int month, int year = 2025)
+        {
+            return ExecuteList<SaleModel>(@$"
+            SELECT 
+	            MAX(M.Name) AS [{nameof(SaleModel.ManagerName)}],
+	            COUNT(S.ID) AS [{nameof(SaleModel.Sales)}]
+            FROM 
+	            Sales S
+	            JOIN Managers M ON S.ManagerId = M.Id
+            WHERE 
+	            Moment BETWEEN @date AND DATEADD(MONTH, 1, @date)
+            GROUP BY
+	            M.Id
+            ORDER BY 
+	            2 DESC
+            ", new() { ["@date"] = new DateTime(year, month, 1) });
+        }
+
+        public void MonthlySalesByManagersSql(int month, int year = 2025)
+        {
+            String sql = @"
+            SELECT 
+	            MAX(M.Name),
+	            COUNT(S.ID) 
+            FROM 
+	            Sales S
+	            JOIN Managers M ON S.ManagerId = M.Id
+            WHERE 
+	            Moment BETWEEN @date AND DATEADD(MONTH, 1, @date)
+            GROUP BY
+	            M.Id
+            ORDER BY 
+	            2 DESC
+            ";
+            using SqlCommand cmd = new(sql, connection);
+            cmd.Parameters.AddWithValue("@date", new DateTime(year, month, 1));
+            try
+            {
+                using SqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    Console.WriteLine("{0} -- {1}", reader[0], reader[1]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed: {0}\n{1}", ex.Message, sql);
             }
         }
 
@@ -52,29 +105,103 @@ namespace SharpKnP321.Data
             var (m1, m2) = GetSalesInfoByMonth(1);
              */
         }
+
         public (int, int) GetSalesInfoByMonth(int month)
         {
             return (1, 2);
         }
 
-        public List<Product> GetProducts()
+        private T FromReader<T>(SqlDataReader reader)
         {
-            List<Product> products = [];
-            String sql = "SELECT * FROM Products";
+            // Generic - узагальнене програмування / на заміну шаблонному програмуванню (template)
+            var t = typeof(T);                                       // Дані про тип, серед яких конструктори, властивості тощо
+            var ctr = t.GetConstructor([]);                          // Знаходимо конструктор без параметрів ([])
+            T res = (T) ctr!.Invoke(null);                           // Викликаємо конструктор, будуємо об'єкт
+            foreach (var prop in t.GetProperties())                  // Перебираємо усі властивості об'єкту (типу)
+            {                                                        // та намагаємось зчитати з даних (reader)
+                try                                                  // таке ж ім'я поля 
+                {                                                    // 
+                    Object data = reader.GetValue(prop.Name);        // Зчитуємо дані, якщо їх немає, буде виняток
+                    if(data.GetType() == typeof(decimal))            // Якщо тип даних decimal, то перетворюмо
+                    {                                                // до double (для внутрішньої сумісності)
+                        prop.SetValue(res, Convert.ToDouble(data));  // 
+                    }                                                // 
+                    else                                             // 
+                    {                                                // 
+                        prop.SetValue(res, data);                    // Для інших випадків - переносимо дані до 
+                    }                                                // підсумкового об'єкту res
+
+                }
+                catch { }
+            }
+            return res;
+        }
+
+        private T ExecuteScalar<T>(String sql, Dictionary<String, Object>? sqlParams = null)
+        {
             using SqlCommand cmd = new(sql, connection);
+            foreach (var param in sqlParams ?? [])
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value);
+            }
+            try
+            {
+                using SqlDataReader reader = cmd.ExecuteReader();   // Reader - ресурс для передачі даних від БД до програми
+                reader.Read();
+                return FromReader<T>(reader);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed: {0}\n{1}", ex.Message, sql);
+                throw;
+            }
+        }
+
+        private List<T> ExecuteList<T>(String sql, Dictionary<String, Object>? sqlParams = null)
+        {
+            List<T> res = [];
+            using SqlCommand cmd = new(sql, connection);
+            foreach (var param in sqlParams ?? [])
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value);
+            }
             try
             {
                 using SqlDataReader reader = cmd.ExecuteReader();   // Reader - ресурс для передачі даних від БД до програми
                 while (reader.Read())   // читаємо по одному рядку доки є результати
                 {
-                    products.Add(Product.FromReader(reader));
+                    res.Add(FromReader<T>(reader));
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Failed: {0}\n{1}", ex.Message, sql);
+                throw;
             }
-            return products;
+            return res;
+        }
+
+        public Product RandomProduct()
+        {            
+            return ExecuteScalar<Product>(
+                "SELECT TOP 1 * FROM Products ORDER BY NEWID()"
+            );            
+        }
+
+        public Department RandomDepartment()
+        {            
+            return ExecuteScalar<Department>(
+                "SELECT TOP 1 * FROM Departments ORDER BY NEWID()"
+            );            
+        }
+        
+        // Реалізувати метод вибору випадкового менеджера, провести випробування
+
+        public List<Product> GetProducts()
+        {
+            return ExecuteList<Product>(
+                "SELECT * FROM Products"
+            );
         }
 
         public void Install()
@@ -255,12 +382,12 @@ namespace SharpKnP321.Data
                 "  ( SELECT TOP 1 Id FROM Managers ORDER BY NEWID() ), " +
                 "  ( SELECT TOP 1 Id FROM Products ORDER BY NEWID() ), " +
                 "  ( SELECT 1 + ABS(CHECKSUM(NEWID())) % 10 ), " +
-                "  ( SELECT DATEADD(MINUTE, ABS(CHECKSUM(NEWID())) % 525600, '2024-01-01') )  " +
+                "  ( SELECT DATEADD(MINUTE, ABS(CHECKSUM(NEWID())) % 525600, '2025-01-01') )  " +
                 ")";
             using SqlCommand cmd = new(sql, connection);
             try
             {
-                for (int i = 0; i < 1e5; i++)
+                for (int i = 0; i < 1e6; i++)
                 {
                     cmd.ExecuteNonQuery();
                 }                

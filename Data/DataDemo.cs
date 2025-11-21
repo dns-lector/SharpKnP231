@@ -13,6 +13,23 @@ namespace SharpKnP321.Data
         public void Run()
         {            
             DataAccessor dataAccessor = new();
+
+            dataAccessor.MonthlySalesByManagersSql(year:2025, month: 1);
+            Console.WriteLine("---------------");
+            dataAccessor.MonthlySalesByManagersOrm(1).ForEach(Console.WriteLine);
+            /*
+             Д.З. Реалізувати вибірки статистики місячних продажів за товарами
+            Назва товару -- кількість продажів
+            Номер місяця (та рік) передавати параметрами до методу.
+            Забезпечити реалізацію через ORM - створити модель (не використовувати
+            модель, створену для менеджерів).
+            Провести випробування, порівняти з безпосереднім виконанням SQL запиту
+             */
+
+            // Console.WriteLine(dataAccessor.RandomProduct());
+            // Console.WriteLine(dataAccessor.RandomDepartment());
+            // dataAccessor.GetProducts().ForEach(Console.WriteLine);
+
             // Console.Write("Кількість продажів за місяць (1-12): ");
             // String? input = Console.ReadLine();
             // // int value;
