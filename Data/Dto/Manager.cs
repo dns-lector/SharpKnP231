@@ -12,5 +12,10 @@ namespace SharpKnP321.Data.Dto
         public Guid DepartmentId { get; set; }
         public String Name { get; set; } = null!;
         public DateTime WorksFrom { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id.ToString()[..3]}... {Name}";
+        }
     }
 }

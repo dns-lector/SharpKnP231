@@ -11,6 +11,64 @@ namespace SharpKnP321.Data
     internal class DataDemo
     {
         public void Run()
+        {
+            DataAccessor dataAccessor = new();
+            List<Department> departments = dataAccessor.GetAll<Department>();
+            List<Manager> managers = dataAccessor.GetAll<Manager>();
+
+            // LINQ - робота з колекціями за аналогією з БД
+            foreach(var name in departments.Select(d => d.Name))
+            {
+                Console.WriteLine(name);
+            }
+            Console.WriteLine(
+                String.Join("\n",
+                departments
+                .GroupJoin(
+                    managers,
+                    d => d.Id,
+                    m => m.DepartmentId,
+                    (d, mans) => new
+                    {
+                        d.Name,
+                        Cnt = mans.Count(),
+                        Employee = String.Join("; ", mans.Select(m => m.Name))
+                    })
+                .OrderByDescending(item => item.Cnt)
+                .Select(item => String.Format("{0} ({1} empl): {2}", item.Name, item.Cnt, item.Employee))
+            ));            
+        }
+        /* Д.З. Створити сутність Access(Id, ManagerId, Login, Salt, Dk)
+         * Реалізувати відповідні методи Install, Seed
+         * Забезпечити роботу GetAll<Access>() за умови, що таблиця матиме назву Accesses
+         * Створити запит LINQ та відобразити: ім'я менеджера - його логін
+         */
+
+        public void Run3()
+        {
+            DataAccessor dataAccessor = new();
+            // dataAccessor.Install();
+            // dataAccessor.Seed();
+
+            // dataAccessor.GetProducts().ForEach(Console.WriteLine);
+            dataAccessor.GetAll<Product>().ForEach(Console.WriteLine);
+            Console.WriteLine("---------------");
+
+            //dataAccessor.GetDepartments().ForEach(Console.WriteLine);
+            dataAccessor.GetAll<Department>().ForEach(Console.WriteLine);
+            Console.WriteLine("---------------");
+
+            //dataAccessor.GetManagers().ForEach(Console.WriteLine);
+            dataAccessor.GetAll<Manager>().ForEach(Console.WriteLine);
+            Console.WriteLine("---------------");
+
+            // dataAccessor.GetNews().ForEach(Console.WriteLine);
+            dataAccessor.GetAll<News>().ForEach(Console.WriteLine);
+            Console.WriteLine("---------------");
+
+        }
+
+        public void Run2()
         {            
             DataAccessor dataAccessor = new();
 

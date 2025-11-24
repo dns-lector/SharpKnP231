@@ -1,10 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
+using SharpKnP321.Data.Attributes;
 using SharpKnP321.Data.Dto;
 using SharpKnP321.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,8 +18,8 @@ namespace SharpKnP321.Data
 
         public DataAccessor()
         {
-            // String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\samoylenko_d\Source\Repos\SharpKnP321\Database1.mdf;Integrated Security=True";
-            String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Lector\source\repos\SharpKnP321\Database1.mdf;Integrated Security=True";
+            String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\samoylenko_d\Source\Repos\SharpKnP321\Database1.mdf;Integrated Security=True";
+            // String connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Lector\source\repos\SharpKnP321\Database1.mdf;Integrated Security=True";
             this.connection = new(connectionString);
             try
             {
@@ -204,12 +206,47 @@ namespace SharpKnP321.Data
             );
         }
 
+        public List<Department> GetDepartments()
+        {
+            return ExecuteList<Department>(
+                "SELECT * FROM Departments"
+            );
+        }
+
+        public List<Manager> GetManagers()
+        {
+            return ExecuteList<Manager>(
+                "SELECT * FROM Managers"
+            );
+        }
+
+        public List<News> GetNews()
+        {
+            return ExecuteList<News>(
+                "SELECT * FROM News"
+            );
+        }
+
+        // Створити узагальнений метод GetAll<T>(), що "поєднує" GetProducts, GetDepartments, GetManagers 
+        public List<T> GetAll<T>()
+        {
+            var t = typeof(T);
+            // перевіряємо чи є у типу Т атрибут, що визначає специфічне ім'я для таблиці
+            var attr = t.GetCustomAttribute<TableNameAttribute>();
+            String tableName = attr?.Value  ??  t.Name + "s";
+            return ExecuteList<T>(
+                $"SELECT * FROM {tableName}"
+            );
+        }
+
+
         public void Install()
         {
             InstallProducts();
             InstallDepartments();
             InstallManagers();
             InstallSales();
+            InstallNews();
         }
         private void InstallSales()
         {
@@ -277,6 +314,24 @@ namespace SharpKnP321.Data
                 Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
             }
         }
+        private void InstallNews()
+        {
+            String sql = "CREATE TABLE News(" +
+                "Id       UNIQUEIDENTIFIER PRIMARY KEY," +
+                "AuthorId UNIQUEIDENTIFIER NOT NULL," +
+                "Title    NVARCHAR(256)    NOT NULL," +
+                "Content  NVARCHAR(MAX)    NOT NULL," +
+                "Moment   DATETIME2        NOT NULL  DEFAULT CURRENT_TIMESTAMP)";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();   // без зворотнього результату
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
 
 
         public void Seed()
@@ -284,6 +339,7 @@ namespace SharpKnP321.Data
             SeedProducts();
             SeedDepartments();
             SeedManagers();
+            SeedNews();
         }
         public void SeedManagers()
         {
@@ -374,7 +430,22 @@ namespace SharpKnP321.Data
                 Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
             }
         }
-        
+        public void SeedNews()
+        {
+            String sql = "INSERT INTO News VALUES" +
+            "('488CD481-E5FF-4594-8F67-27AF6B723834', '36726ECC-120C-491B-AD53-2AC3C0FFD752', N'What happens to your body if you only eat fruit?', N'When it comes to dieting, there is no shortage of options to try, from plant-based to keto. Occasionally, people try the fruitarian diet, which involves eating primarily fruits. Even Apple founder Steve Jobs dabbled with this way of eating. But what happens to your body if you only eat fruit? While only eating whole, natural foods from the earth sounds healthy, this diet can cause many health problems.', '2025-11-22')," +
+            "('7D1AB47C-BDFD-49E9-B8FF-6E982E10A32F', '4B388C74-87F8-4F54-85B3-41E13035F0B1', N'Wife wanted!',                                     N'Aristocrat, 79, launches bid to find a Lady who is 20 years younger and can fire a gun', '2025-11-23')," +
+            "('0E7B6B39-84A3-4B54-A90B-B7EFBE7DA44C', '93FE7CA7-A98D-4A0A-89C2-F2C78B1B6C5B', N'The most beautiful cars ever made',                N'We now have more than 120 years’ worth of cars to enjoy now – some memorably ugly ones too – and that, very obviously, makes it ever harder for new models to break into this list which we produce every few years', '2025-11-24')";
+            using SqlCommand cmd = new(sql, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Command failed: {0}\n{1}", ex.Message, sql);
+            }
+        }
         public void FillSales()
         {
             String sql = "INSERT INTO Sales(Id, ManagerId, ProductId, Quantity, Moment) VALUES" +
