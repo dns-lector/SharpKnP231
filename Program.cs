@@ -1,4 +1,5 @@
 ﻿
+using SharpKnP321.AsyncProgramming;
 using SharpKnP321.Collect;
 using SharpKnP321.Data;
 using SharpKnP321.Dict;
@@ -22,7 +23,8 @@ try  // рекомендація - оточувати точку входу бл
     // new EventsDemo().Run();
     // new CollectionsDemo().Run();
     // new DictDemo().Run();
-    new DataDemo().Run();
+    // new DataDemo().Run();
+    new AsyncProgramming().Run();
 }
 catch (Exception ex)
 {
@@ -31,6 +33,11 @@ catch (Exception ex)
     // У режимі розробника це ще може бути Error-Page
     Console.WriteLine("Не оброблений у прогамі виняток: " + ex.ToString());
 }
+
+Console.WriteLine("Main finished");
+
+
+
 
 void ShowReflection()
 {
@@ -114,8 +121,6 @@ void ShowLibrary()
 
     Console.WriteLine("-------------------");
 }
-
-
 
 void Intro()
 {
