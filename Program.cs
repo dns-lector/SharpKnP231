@@ -10,6 +10,7 @@ using SharpKnP321.Files;
 using SharpKnP321.Library;
 using SharpKnP321.Vectors;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 // ShowReflection();
 // new VectorDemo().Run();
@@ -24,7 +25,11 @@ try  // рекомендація - оточувати точку входу бл
     // new CollectionsDemo().Run();
     // new DictDemo().Run();
     // new DataDemo().Run();
-    new AsyncProgramming().Run();
+    // new AsyncProgramming().Run();
+    var t = new ThreadJoin();
+    var h = GCHandle.Alloc(t, GCHandleType.Pinned);   // не дозволяємо GC зміщувати даний об'єкт у пам'яті
+    t.Run();
+    h.Free();                    // по завершенню знімаємо фіксацію об'єкта у пам'яті
 }
 catch (Exception ex)
 {
