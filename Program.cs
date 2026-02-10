@@ -26,10 +26,15 @@ try  // рекомендація - оточувати точку входу бл
     // new DictDemo().Run();
     // new DataDemo().Run();
     // new AsyncProgramming().Run();
-    var t = new ThreadJoin();
+
+    /*  // Запуск системних задач, які орієнтуються на pointers, краще робити в умовах фіксованих розміщень об'єктів
+    var t = new ThreadPooling();
     var h = GCHandle.Alloc(t, GCHandleType.Pinned);   // не дозволяємо GC зміщувати даний об'єкт у пам'яті
     t.Run();
     h.Free();                    // по завершенню знімаємо фіксацію об'єкта у пам'яті
+    */
+    new TaskDemo().Run();
+
 }
 catch (Exception ex)
 {
