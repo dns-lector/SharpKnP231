@@ -12,8 +12,9 @@ namespace SharpKnP321.AsyncProgramming
             Task task = Task.Run(TaskAction);   // Запускає задачу асинхронно та повертає її об'єкт
 
             Task<String> taskString =           // Задачі дозволяють повертати значення з "обгорткою" Task<>
-                Task.Run(TaskStringAction);     // 
-
+                // Task.Run(TaskStringAction);  // варіант для методу без параметрів
+                Task.Run(() => TaskStringAction(2000));  // З метою передачі параметрів вживає лямбда
+                                                         // кількість та тип параметрів не обмежується
             Task.Delay(500).Wait();
             Console.WriteLine("TaskDemo Wait finish");
             task.Wait();                        // Аналог Thread.Join()
@@ -21,6 +22,31 @@ namespace SharpKnP321.AsyncProgramming
             // Одержання результату задачі - .Result, при цьому також включається очікування
             Console.WriteLine($"taskString.Result = {taskString.Result}");
 
+            var action = () => TaskStringAction(-1);
+            try
+            {
+                Task.Run(action);
+                // виняток у задачі не передається до точки виклику, проте
+                // не спричинює аварійний стан (характерно для фонових потоків)
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            Task.Delay(100).Wait();
+
+            string action2() => TaskStringAction(-2);
+            try
+            {
+                // Task.Run(() => TaskStringAction(-1)).Wait();
+                Console.WriteLine( Task.Run(action2).Result );
+                // Але якщо у try-catch додається очікування (або Wait() або Result)
+                // то виняток у цей блок передається
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             Console.WriteLine("TaskDemo finish");
         }
 
@@ -31,11 +57,15 @@ namespace SharpKnP321.AsyncProgramming
             Console.WriteLine("TaskAction finish");
         }
 
-        private String TaskStringAction()
+        private String TaskStringAction(int timeout)
         {
-            Console.WriteLine("TaskStringAction start");
-            Task.Delay(2000).Wait();
-            Console.WriteLine("TaskStringAction finish");
+            if(timeout <= 0)
+            {
+                throw new ArgumentOutOfRangeException("timeout must be positive");
+            }
+            Console.WriteLine($"TaskStringAction {timeout} start");
+            Task.Delay(timeout).Wait();
+            Console.WriteLine($"TaskStringAction {timeout} finish");
             return "TaskStringAction";
         }
     }
