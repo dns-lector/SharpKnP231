@@ -34,7 +34,8 @@ try  // рекомендація - оточувати точку входу бл
     h.Free();                    // по завершенню знімаємо фіксацію об'єкта у пам'яті
     */
     // new TaskDemo().Run();
-    new AsyncDemo().Run();
+    // new AsyncDemo().Run();
+    new Continuations().Run();
 
 }
 catch (Exception ex)
