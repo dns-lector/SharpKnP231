@@ -37,7 +37,7 @@ try  // рекомендація - оточувати точку входу бл
     // new TaskDemo().Run();
     // new AsyncDemo().Run();
     // new Continuations().Run();
-    new NetworkingDemo().Run();
+    new NetworkingDemo().Run().Wait();
 }
 catch (Exception ex)
 {
