@@ -12,7 +12,20 @@ namespace SharpKnP321.Networking
 {
     internal class NetworkingDemo
     {
-        public async Task Run()  // Xml
+        public async Task Run()
+        {
+            Console.WriteLine("Робота з АРІ");
+            MoonApi moonApi = new();
+            MoonPhase todayPhase = moonApi.TodayPhaseAsync().Result;
+            Console.WriteLine("{0} {1}", todayPhase.PhaseName, todayPhase.Lighting);
+
+            MoonPhase tomorrowPhase = moonApi.PhaseByDateAsync(new DateOnly(2026,2,24)).Result;
+            Console.WriteLine("{0} {1}", tomorrowPhase.PhaseName, tomorrowPhase.Lighting);
+            // Д.З. Реалізувати відображення даних про фазу місяця на задану дату
+            // Дату вводити з клавіатури на запит користувача.
+         }
+
+        public async Task RunXml()  // 
         {
             using HttpClient client = new();
             HttpRequestMessage request = new()

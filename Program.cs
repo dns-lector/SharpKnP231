@@ -9,6 +9,7 @@ using SharpKnP321.Extensions;
 using SharpKnP321.Files;
 using SharpKnP321.Library;
 using SharpKnP321.Networking;
+using SharpKnP321.Users;
 using SharpKnP321.Vectors;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -37,7 +38,9 @@ try  // рекомендація - оточувати точку входу бл
     // new TaskDemo().Run();
     // new AsyncDemo().Run();
     // new Continuations().Run();
-    new NetworkingDemo().Run().Wait();
+    // new NetworkingDemo().Run().Wait();
+    //new EmailDemo().Run();
+    new UsersDemo().Run();
 }
 catch (Exception ex)
 {
