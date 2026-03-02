@@ -91,6 +91,39 @@ namespace SharpKnP321.Users.Dal
             await Task.WhenAll(emailTask, dbTask, accessTask);
         }
 
+        public async Task<UserData?> SignIn(String login, String password)
+        {
+            UserAccess? userAccess = await connection.QuerySingleOrDefaultAsync<UserAccess>(
+                "SELECT * FROM UserAccess u WHERE u.AccessLogin = @AccessLogin", new
+                {
+                    AccessLogin = login
+                });
+            if (userAccess == null)
+            {
+                return null;
+            }
+            if(kdfService.Dk(userAccess.AccessSalt, password) != userAccess.AccessDk)
+            {
+                return null;
+            }
+
+            return await connection.QuerySingleAsync<UserData>(
+                "SELECT * FROM UserData u WHERE u.UserId = @UserId", new
+                {
+                    UserId = userAccess.UserId,
+                });
+        }
+
+        public async Task<bool> ConfirmEmailCodeAsync(Guid userId, String code)
+        {
+            UserData userData = await connection.QuerySingleAsync<UserData>(
+                "SELECT * FROM UserData u WHERE u.UserId = @UserId", new
+                {
+                    UserId = userId
+                });
+            return userData.UserEmailCode == code;
+        }
+
         public void Install(bool isHard = false)
         {
             if(isHard)

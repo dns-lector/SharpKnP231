@@ -62,7 +62,35 @@ namespace SharpKnP321.Users
 
         private void SignIn()
         {
-            Console.WriteLine("SignIn");
+            Console.WriteLine("Автентифікація у системі");
+            String UserEmail;
+            String password;
+            bool isEntryCorrect;
+            do
+            {
+                Console.Write("E-mail: ");
+                UserEmail = Console.ReadLine()!.Trim();
+                if (UserEmail == String.Empty) return;
+                isEntryCorrect = Regex.IsMatch(UserEmail, @"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
+                if (!isEntryCorrect)
+                {
+                    Console.WriteLine("Не відповідає формату, відкоригуйте");
+                }
+            } while (!isEntryCorrect);
+                
+            Console.Write("Password: ");
+            password = Console.ReadLine()!.Trim();
+            
+            UserData? userData = _accessor.SignIn(UserEmail, password).Result;
+            if(userData == null)
+            {
+                Console.WriteLine("У вході відмовлено");
+                return;
+            }
+            Console.WriteLine($"Вітання, {userData.UserName}");
+            // Перевірити чи у користувача підтверджена пошта (за наявністю коду у БД)
+            // якщо ні, то запропонувати введення коду 
+
         }
 
         private void SignUp()
@@ -108,11 +136,33 @@ namespace SharpKnP321.Users
             try
             {
                 _accessor.SignUp(userData, password).Wait();
-                Console.WriteLine("Реєстрація успішна, перевірте пошту");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                return;
+            }
+            Console.WriteLine("Реєстрація успішна, перевірте пошту");
+            int cnt = 3;
+            bool isConfirmed;
+            do
+            {
+                Console.Write("Код підтвердження з пошти: ");
+                String code = Console.ReadLine()!;
+                isConfirmed = _accessor.ConfirmEmailCodeAsync(userData.UserId, code).Result;
+                cnt--;
+                if (!isConfirmed)
+                {
+                    Console.WriteLine("Код не прийнято");
+                }
+            } while (cnt > 0 && !isConfirmed);
+            if (isConfirmed)
+            {
+                Console.WriteLine("Пошту успішно підтверджено");
+            }
+            else
+            {
+                Console.WriteLine("Пошту не підтверджено, код можна буде ввести після автентифікації");
             }
         }
     }
@@ -137,4 +187,14 @@ namespace SharpKnP321.Users
  *     (НЕ так, що в кожній з таблиць є ID та їх значення різні у сукупній вибірці)
  *  - поєднання таблиць здійснюється за однаковими іменами полів (... ON ua.UserId = ud.UserId)  
  *     (НЕ ... ON ua.UserId = ud.Id)
+ */
+/* Д.З. Реалізувати валідацію паролю при реєстрації нового користувача.
+ * Перевіряти введений пароль на "міцність"
+ * - довжина не менша 6 символів
+ * - містить щонайменше одну цифру, 
+ * - містить щонайменше один спецсимвол (не літера, не цифра), 
+ * - містить щонайменше одну літеру нижнього реєстру (малу)
+ * - містить щонайменше одну літеру верхнього реєстру (велику)
+ * Якщо пароль не відповідає принаймні одному критерію, то виводити повідомлення
+ * про ті критерії, що порушені, та повертатись до повторного введення паролю.
  */
