@@ -68,6 +68,7 @@ namespace SharpKnP321.Users
         private void SignUp()
         {
             UserData userData = new();
+            String password;
             bool isEntryCorrect;
             Console.WriteLine("Реєстрація нового користувача (порожній ввід - вихід)");
             do
@@ -92,7 +93,27 @@ namespace SharpKnP321.Users
                     Console.WriteLine("Не відповідає формату, відкоригуйте");
                 }
             } while(!isEntryCorrect);
+            do
+            {
+                Console.Write("Password: ");
+                password = Console.ReadLine()!.Trim();
+                if (password == String.Empty) return;
+                isEntryCorrect = password.Length > 2;  // Regex.IsMatch(password, @"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$"); 
+                if (!isEntryCorrect)
+                {
+                    Console.WriteLine("Не відповідає формату, відкоригуйте");
+                }
+            } while(!isEntryCorrect);
 
+            try
+            {
+                _accessor.SignUp(userData, password).Wait();
+                Console.WriteLine("Реєстрація успішна, перевірте пошту");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }

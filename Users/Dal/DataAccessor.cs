@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using SharpKnP321.Services.Email;
+using SharpKnP321.Services.Kdf;
 using SharpKnP321.Users.Dal.Entities;
 using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 
@@ -12,6 +15,8 @@ namespace SharpKnP321.Users.Dal
     {
         private SqlConnection connection;
         private readonly Random random = new();
+        private readonly IEmailService emailService = new GmailService();
+        private readonly IKdfService kdfService = new PbKdfService();
 
         public DataAccessor() 
         {
@@ -44,14 +49,48 @@ namespace SharpKnP321.Users.Dal
             }
         }
 
-        public void SignUp(UserData userData)
+        public async Task SignUp(UserData userData, String password)
         {
-            if(userData.UserId == default)
+            if (userData.UserId == default)
             {
                 userData.UserId = Guid.NewGuid();
             }
-            userData.UserEmailCode = String.Join("", Enumerable.Range(0,6).Select(_ => ""));   // 6-значний код підтвердження
+            userData.UserEmailCode = String.Join("", Enumerable.Range(0, 6).Select(_ => "0123456789"[random.Next(10)]));   // 6-значний код підтвердження
+            // формуємо повідомлення на підтвердження пошти
+            MailMessage mailMessage = new()
+            {
+                IsBodyHtml = true,
+                Subject = "Message from Sharp",
+                Body = @$"<html>
+                    <h1>Шановний користувач!</h1>
+                    <p>Вітаємо вас з реєстрацією на сайті<p>
+                    <p>Для завершення підтвердження пошти введіть код <b style='font-size: large'>{userData.UserEmailCode}</b></p>
+                </html>",
+            };
+            mailMessage.To.Add(new MailAddress(userData.UserEmail));
+            Task emailTask = emailService.SendAsync(mailMessage);   // запускаємо, але не чекаємо
+
+            // Зберігаємо нового користувача (у т.ч. код підтвердження) у БД
+            Task dbTask = connection.ExecuteAsync(@"INSERT INTO UserData(UserId, UserName, UserEmail, UserEmailCode)
+            VALUES(@UserId, @UserName, @UserEmail, @UserEmailCode)", userData);
+
+            // Створюємо доступ для нового користувача
+            String salt = Guid.NewGuid().ToString()[..16];
+            String dk = kdfService.Dk(salt, password);
+            Task accessTask = connection.ExecuteAsync(
+            @"INSERT INTO UserAccess(AccessId, UserId, AccessLogin, AccessSalt, AccessDk)
+            VALUES(@AccessId, @UserId, @AccessLogin, @AccessSalt, @AccessDk)", new
+            {
+                AccessId = Guid.NewGuid(),
+                UserId = userData.UserId,
+                AccessLogin = userData.UserEmail,
+                AccessSalt = salt,
+                AccessDk = dk
+            });
+
+            await Task.WhenAll(emailTask, dbTask, accessTask);
         }
+
         public void Install(bool isHard = false)
         {
             if(isHard)
