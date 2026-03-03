@@ -1,8 +1,10 @@
 ﻿using SharpKnP321.Users.Dal;
 using SharpKnP321.Users.Dal.Entities;
+using SharpKnP321.Users.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace SharpKnP321.Users
@@ -81,16 +83,23 @@ namespace SharpKnP321.Users
             Console.Write("Password: ");
             password = Console.ReadLine()!.Trim();
             
-            UserData? userData = _accessor.SignIn(UserEmail, password).Result;
-            if(userData == null)
+            SignInModel? model = _accessor.SignIn(UserEmail, password).Result;
+            if(model == null)
             {
                 Console.WriteLine("У вході відмовлено");
                 return;
             }
-            Console.WriteLine($"Вітання, {userData.UserName}");
+            Console.WriteLine($"Вітання, {model.UserData.UserName}, Вам видано токен {model.AccessToken.TokenId}");
             // Перевірити чи у користувача підтверджена пошта (за наявністю коду у БД)
             // якщо ні, то запропонувати введення коду 
-
+            Console.Write("Запам'ятати мене (y/...)? ");
+            ConsoleKeyInfo keyInfo = Console.ReadKey(false);
+            Console.WriteLine();
+            if(keyInfo.KeyChar == 'y' || keyInfo.KeyChar == 'Y')
+            {
+                File.WriteAllText("saved.model", JsonSerializer.Serialize(model));
+                Console.WriteLine("Дані збережено");
+            }  // azure.spd111.od.0@ukr.net
         }
 
         private void SignUp()

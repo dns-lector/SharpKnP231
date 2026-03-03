@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using SharpKnP321.Services.Email;
 using SharpKnP321.Services.Kdf;
 using SharpKnP321.Users.Dal.Entities;
+using SharpKnP321.Users.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Mail;
@@ -91,27 +92,47 @@ namespace SharpKnP321.Users.Dal
             await Task.WhenAll(emailTask, dbTask, accessTask);
         }
 
-        public async Task<UserData?> SignIn(String login, String password)
+        public async Task<SignInModel?> SignIn(String login, String password)
         {
             UserAccess? userAccess = await connection.QuerySingleOrDefaultAsync<UserAccess>(
                 "SELECT * FROM UserAccess u WHERE u.AccessLogin = @AccessLogin", new
                 {
                     AccessLogin = login
                 });
-            if (userAccess == null)
+            if (userAccess == null || 
+                kdfService.Dk(userAccess.AccessSalt, password) != userAccess.AccessDk)
             {
                 return null;
             }
-            if(kdfService.Dk(userAccess.AccessSalt, password) != userAccess.AccessDk)
+            SignInModel ret = new()
             {
-                return null;
-            }
+                UserAccess = userAccess
+            };
 
-            return await connection.QuerySingleAsync<UserData>(
+            var userDataTask = connection.QuerySingleAsync<UserData>(
                 "SELECT * FROM UserData u WHERE u.UserId = @UserId", new
                 {
                     UserId = userAccess.UserId,
                 });
+            // формуємо токен
+            AccessToken accessToken = new()
+            {
+                TokenId = Guid.NewGuid(),
+                AccessId = userAccess.AccessId,
+                TokenIat = DateTime.Now,
+                TokenExp = DateTime.Now.AddMinutes(1),
+            };
+
+            // Вносимо токен до БД
+            var accessTokenTask = connection.ExecuteAsync(
+                "INSERT INTO AccessToken (TokenId,AccessId,TokenIat,TokenExp) " +
+                "VALUES (@TokenId,@AccessId,@TokenIat,@TokenExp)",
+                accessToken);
+
+            ret.UserData = await userDataTask;
+            ret.AccessToken = accessToken;
+            await accessTokenTask;
+            return ret;
         }
 
         public async Task<bool> ConfirmEmailCodeAsync(Guid userId, String code)
@@ -121,7 +142,15 @@ namespace SharpKnP321.Users.Dal
                 {
                     UserId = userId
                 });
-            return userData.UserEmailCode == code;
+            bool isOk = userData.UserEmailCode == code;
+            if(isOk)   // фіксуємо підтвердження - скидаємо до NULL код у БД
+            {
+                await connection.ExecuteAsync("UPDATE UserData SET UserEmailCode = NULL WHERE UserId = @UserId", new
+                {
+                    UserId = userId
+                });
+            }
+            return isOk;
         }
 
         public void Install(bool isHard = false)
