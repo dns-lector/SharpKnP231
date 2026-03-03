@@ -18,6 +18,7 @@ namespace SharpKnP321.Users.Dal
         private readonly Random random = new();
         private readonly IEmailService emailService = new GmailService();
         private readonly IKdfService kdfService = new PbKdfService();
+        private const double tokenPeriodMinutes = 5.0;
 
         public DataAccessor() 
         {
@@ -48,6 +49,17 @@ namespace SharpKnP321.Users.Dal
             {
                 throw new Exception($"Помилка підключення БД: {ex.Message}");
             }
+        }
+
+        public async Task<DateTime> ProlongToken(Guid tokenId)
+        {
+            DateTime TokenExp = DateTime.Now.AddMinutes(tokenPeriodMinutes);
+            await connection.ExecuteAsync("UPDATE AccessToken SET TokenExp = @TokenExp WHERE TokenId = @tokenId", new
+            {
+                TokenExp,
+                tokenId
+            });
+            return TokenExp;
         }
 
         public async Task SignUp(UserData userData, String password)
@@ -104,24 +116,27 @@ namespace SharpKnP321.Users.Dal
             {
                 return null;
             }
-            SignInModel ret = new()
-            {
-                UserAccess = userAccess
-            };
 
             var userDataTask = connection.QuerySingleAsync<UserData>(
                 "SELECT * FROM UserData u WHERE u.UserId = @UserId", new
                 {
                     UserId = userAccess.UserId,
                 });
+            SignInModel ret = new()
+            {
+                UserAccess = userAccess
+            };
+
             // формуємо токен
             AccessToken accessToken = new()
             {
                 TokenId = Guid.NewGuid(),
                 AccessId = userAccess.AccessId,
                 TokenIat = DateTime.Now,
-                TokenExp = DateTime.Now.AddMinutes(1),
+                TokenExp = DateTime.Now.AddMinutes(tokenPeriodMinutes),
             };
+
+            ret.UserData = await userDataTask;
 
             // Вносимо токен до БД
             var accessTokenTask = connection.ExecuteAsync(
@@ -129,11 +144,14 @@ namespace SharpKnP321.Users.Dal
                 "VALUES (@TokenId,@AccessId,@TokenIat,@TokenExp)",
                 accessToken);
 
-            ret.UserData = await userDataTask;
             ret.AccessToken = accessToken;
             await accessTokenTask;
             return ret;
         }
+        /* Д.З. При автентифікації здійснювати перевірку чи є в користувача
+         * активний токен. У такому разі подовжувати його дію, замість
+         * генерування нового. За відсутності - генерувати новий.
+         */
 
         public async Task<bool> ConfirmEmailCodeAsync(Guid userId, String code)
         {

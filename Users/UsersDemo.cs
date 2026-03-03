@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SharpKnP321.Users
 {
-    internal record MenuItem(char Key, String Title, Action? action)
+    internal record MenuItem(char Key, String Title, Action? action, bool IsAuthorized = false)
     {
         public override string ToString()
         {
@@ -19,13 +20,18 @@ namespace SharpKnP321.Users
 
     internal class UsersDemo
     {
+        private const String savedFilename = "saved.model";   // azure.spd111.od.0@ukr.net   123
+
         private DataAccessor _accessor = null!;
+        private SignInModel? signInModel;
 
         private MenuItem[] menu => [
             new MenuItem('i', "Інсталювати таблиці БД", () => _accessor.Install()),
             new MenuItem('h', "ПереІнсталювати таблиці БД", () => _accessor.Install(isHard:true)),
             new MenuItem('1', "Реєстрація нового користувача", SignUp),
             new MenuItem('2', "Вхід до системи (автентифікація)", SignIn),
+            new MenuItem('3', "Одержати персональні дані (авторизація)", GetPersonal, IsAuthorized:true),
+            new MenuItem('4', "Вийти з авторизованого режиму (Sign Out)", SignOut, IsAuthorized:true),
             new MenuItem('0', "Вихід", null),
         ];
 
@@ -40,17 +46,45 @@ namespace SharpKnP321.Users
                 Console.WriteLine(ex.Message);
                 return;
             }
+            // перевіряємо чи є збережені дані автентифікації (запам'ятати мене)
+            if (File.Exists(savedFilename))
+            {
+                signInModel = JsonSerializer.Deserialize<SignInModel>(
+                    File.ReadAllText(savedFilename)
+                )!;
+                // Перевіряємо термін придатності збереженого токена
+                if(signInModel.AccessToken.TokenExp == null || signInModel.AccessToken.TokenExp.Value > DateTime.Now)
+                {
+                    // Токен придатний - оновлюємо його термін на новий період
+                    var task = _accessor.ProlongToken(signInModel.AccessToken.TokenId);
+                    Console.WriteLine($"Вітаємо, {signInModel.UserData.UserName}, ваш доступ відновлено");
+                    signInModel.AccessToken.TokenExp = task.Result;
+                }
+                else
+                {
+                    Console.WriteLine("Збережені дані добігли терміну придатності. Необхідний новий вхід");
+                    signInModel = null;
+                    File.Delete(savedFilename);
+                }
+            }
 
             MenuItem? selectedItem;
             do
             {
                 foreach (var item in menu)
                 {
-                    Console.WriteLine(item);
+                    if (!item.IsAuthorized || signInModel != null)
+                    {
+                        Console.WriteLine(item);
+                    }
                 }
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 Console.WriteLine();
-                selectedItem = menu.FirstOrDefault(item => item.Key == keyInfo.KeyChar);
+                // selectedItem = menu.FirstOrDefault(item => item.Key == keyInfo.KeyChar);
+                // Коригуємо пошук меню з урахуванням обмежень з авторизації
+                selectedItem = menu.FirstOrDefault(item => 
+                    item.Key == keyInfo.KeyChar && 
+                    (!item.IsAuthorized || signInModel != null));
                 if (selectedItem is null)
                 {
                     Console.WriteLine("Нерозпізнаний вибір");
@@ -60,6 +94,29 @@ namespace SharpKnP321.Users
                     selectedItem.action?.Invoke();
                 }
             } while (selectedItem == null || selectedItem.action != null);
+        }
+
+        private void SignOut()
+        {
+            Console.Write("Підтверджуєте вихід (y/...)? ");
+            ConsoleKeyInfo keyInfo = Console.ReadKey(false);
+            Console.WriteLine();
+            if (keyInfo.KeyChar == 'y' || keyInfo.KeyChar == 'Y')
+            {
+                signInModel = null;
+                File.Delete(savedFilename);
+                Console.WriteLine("Переведено до неавторизованого режиму");
+            }
+            else
+            {
+                Console.WriteLine("Вихід скасовано");
+            }
+        }
+
+        private void GetPersonal()
+        {
+            if (signInModel == null) return;
+            Console.WriteLine($"Name: {signInModel.UserData.UserName}, Email: {signInModel.UserData.UserEmail}, TokenExp: {signInModel.AccessToken.TokenExp}");
         }
 
         private void SignIn()
@@ -83,13 +140,13 @@ namespace SharpKnP321.Users
             Console.Write("Password: ");
             password = Console.ReadLine()!.Trim();
             
-            SignInModel? model = _accessor.SignIn(UserEmail, password).Result;
-            if(model == null)
+            signInModel = _accessor.SignIn(UserEmail, password).Result;
+            if(signInModel == null)
             {
                 Console.WriteLine("У вході відмовлено");
                 return;
             }
-            Console.WriteLine($"Вітання, {model.UserData.UserName}, Вам видано токен {model.AccessToken.TokenId}");
+            Console.WriteLine($"Вітання, {signInModel.UserData.UserName}, Вам видано токен {signInModel.AccessToken.TokenId}");
             // Перевірити чи у користувача підтверджена пошта (за наявністю коду у БД)
             // якщо ні, то запропонувати введення коду 
             Console.Write("Запам'ятати мене (y/...)? ");
@@ -97,9 +154,9 @@ namespace SharpKnP321.Users
             Console.WriteLine();
             if(keyInfo.KeyChar == 'y' || keyInfo.KeyChar == 'Y')
             {
-                File.WriteAllText("saved.model", JsonSerializer.Serialize(model));
+                File.WriteAllText(savedFilename, JsonSerializer.Serialize(signInModel));
                 Console.WriteLine("Дані збережено");
-            }  // azure.spd111.od.0@ukr.net
+            }  
         }
 
         private void SignUp()
